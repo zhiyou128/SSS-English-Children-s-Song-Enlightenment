@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快乐英语儿歌乐园</title>
+    
+    <!-- React & Tailwind -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #FFF3E0; /* 暖橙色背景 */
+            background-image: radial-gradient(#FFCC80 15%, transparent 15%);
+            background-size: 30px 30px;
+        }
+        .jelly-card {
+            transition: all 0.2s;
+            border-bottom-width: 8px;
+        }
+        .jelly-card:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.05);
+        }
+        .jelly-card:active {
+            transform: translateY(4px);
+            border-bottom-width: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // 🟢 课程列表配置 (已修正文件名)
+        const LESSONS = [
+            { 
+                id: 1, 
+                title: "Baby Shark", 
+                cnTitle: "鲨鱼宝宝", 
+                icon: "🦈", 
+                color: "bg-blue-400", 
+                borderColor: "border-blue-600",
+                fileName: "baby-shark.html", // 对应 Baby Shark 文件
+                isReady: true 
+            },
+            { 
+                id: 2, 
+                title: "What's Name?", 
+                cnTitle: "你叫什么名字", 
+                icon: "👋", 
+                color: "bg-green-400", 
+                borderColor: "border-green-600",
+                fileName: "whats-your-name.html", // 对应第二课文件
+                isReady: true 
+            },
+            { 
+                id: 3, 
+                title: "Twinkle Star", 
+                cnTitle: "小星星", 
+                icon: "⭐", 
+                color: "bg-indigo-500", 
+                borderColor: "border-indigo-700",
+                fileName: "twinkle-star.html", // 对应第三课文件
+                isReady: true 
+            },
+            { 
+                id: 4, 
+                title: "See You Later", 
+                cnTitle: "再见鳄鱼", 
+                icon: "🐊", 
+                color: "bg-emerald-500", 
+                borderColor: "border-emerald-700",
+                fileName: "See You Later.html", // ✅ 已修正：对应你上传的文件名 (含空格)
+                isReady: true 
+            },
+            { 
+                id: 5, 
+                title: "Peek-a-boo", 
+                cnTitle: "捉迷藏", 
+                icon: "🙈", 
+                color: "bg-pink-400", 
+                borderColor: "border-pink-600",
+                fileName: "Peek-a-boo.html", // ✅ 已修正：对应你上传的文件名 (大写P)
+                isReady: true 
+            },
+            { 
+                id: 6, 
+                title: "Coming Soon", 
+                cnTitle: "敬请期待", 
+                icon: "🎁", 
+                color: "bg-gray-300", 
+                borderColor: "border-gray-400",
+                fileName: "#", 
+                isReady: false 
+            },
+        ];
+
+        const App = () => {
+            const handleLessonOpen = (lesson) => {
+                if (lesson.isReady) {
+                    window.location.href = lesson.fileName;
+                } else {
+                    alert("🚧 课程正在制作中，敬请期待！\nComing Soon!");
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-6 flex flex-col items-center">
+                    
+                    {/* Brand Badge */}
+                    <div className="bg-orange-100 border-2 border-orange-300 text-orange-600 font-bold px-6 py-2 rounded-full mb-4 shadow-sm transform -rotate-1">
+                        知柚制作，快乐英语儿歌启蒙 🍊
+                    </div>
+
+                    {/* Header */}
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-orange-200 mb-10 text-center w-full max-w-3xl transform rotate-1">
+                        <h1 className="text-3xl md:text-5xl font-black text-orange-500 mb-2">
+                            🎶 Kids Song Party
+                        </h1>
+                        <p className="text-gray-400 font-bold text-lg">快乐英语儿歌乐园</p>
+                    </div>
+
+                    {/* Grid Layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+                        {LESSONS.map((lesson) => (
+                            <div 
+                                key={lesson.id}
+                                onClick={() => handleLessonOpen(lesson)}
+                                className={`
+                                    ${lesson.isReady ? lesson.color : 'bg-gray-200'} 
+                                    ${lesson.isReady ? lesson.borderColor : 'border-gray-400'} 
+                                    jelly-card rounded-3xl p-6 cursor-pointer relative overflow-hidden group h-48 flex flex-col items-center justify-center
+                                `}
+                            >
+                                {!lesson.isReady && (
+                                    <div className="absolute top-3 right-3 opacity-50">🔒</div>
+                                )}
+
+                                <div className={`text-6xl mb-3 transition-transform duration-300 ${lesson.isReady ? 'group-hover:scale-110' : 'opacity-50 grayscale'}`}>
+                                    {lesson.icon}
+                                </div>
+                                
+                                <h2 className={`text-2xl font-black text-white drop-shadow-md text-center ${!lesson.isReady && 'text-gray-400'}`}>
+                                    {lesson.title}
+                                </h2>
+                                <p className="text-white/90 font-bold bg-black/10 px-3 py-1 rounded-full mt-1 text-sm">
+                                    {lesson.cnTitle}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <footer className="mt-12 text-orange-400 font-bold opacity-60">
+                        Made with ❤️ for Kids
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
