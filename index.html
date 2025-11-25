@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2025 by anonymous (http://jsbin.com/totumigaxe/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Shark Digital Toy House</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #E0F7FA; /* Light Ocean Blue */
+            background-image: radial-gradient(#4DD0E1 20%, transparent 20%),
+                              radial-gradient(#4DD0E1 20%, transparent 20%);
+            background-position: 0 0, 50px 50px;
+            background-size: 100px 100px;
+        }
+
+        /* 3D Jelly Button Styles */
+        .jelly-btn {
+            transition: all 0.1s;
+            border-bottom-width: 8px;
+        }
+        .jelly-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 4px;
+            box-shadow: none !important;
+        }
+
+        /* Floating Bubbles Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-100vh); opacity: 0; }
+        }
+        .bubble {
+            position: absolute;
+            bottom: -50px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 15s infinite linear;
+        }
+        
+        /* Hide scrollbar for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Data from the provided content
+        const VOCAB_DATA = [
+            { id: 1, en: "Baby Shark", cn: "鲨鱼宝宝", color: "bg-yellow-400", border: "border-yellow-600", icon: "🦈" },
+            { id: 2, en: "Mama Shark", cn: "鲨鱼妈妈", color: "bg-pink-400", border: "border-pink-600", icon: "💄" },
+            { id: 3, en: "Papa Shark", cn: "鲨鱼爸爸", color: "bg-blue-500", border: "border-blue-700", icon: "👔" },
+            { id: 4, en: "Grandma Shark", cn: "鲨鱼奶奶", color: "bg-orange-400", border: "border-orange-600", icon: "👵" },
+            { id: 5, en: "Grandpa Shark", cn: "鲨鱼爷爷", color: "bg-green-500", border: "border-green-700", icon: "👴" },
+            { id: 6, en: "Little Fish", cn: "小鱼", color: "bg-purple-400", border: "border-purple-600", icon: "🐠" },
+            { id: 7, en: "Hungry Sharks", cn: "饿了的鲨鱼", color: "bg-red-400", border: "border-red-600", icon: "🍽️" },
+            { id: 8, en: "Swim Away", cn: "快游走", color: "bg-teal-400", border: "border-teal-600", icon: "🏊" },
+        ];
+
+        const LYRICS_DATA = [
+            { en: "Baby shark, doo doo doo doo doo doo", cn: "鲨鱼宝宝，嘟嘟嘟..." },
+            { en: "Mama shark, doo doo doo doo doo doo", cn: "鲨鱼妈妈，嘟嘟嘟..." },
+            { en: "Papa shark, doo doo doo doo doo doo", cn: "鲨鱼爸爸，嘟嘟嘟..." },
+            { en: "Grandma shark, doo doo doo doo doo doo", cn: "鲨鱼奶奶，嘟嘟嘟..." },
+            { en: "Grandpa shark, doo doo doo doo doo doo", cn: "鲨鱼爷爷，嘟嘟嘟..." },
+            { en: "Let's go hunt, doo doo doo doo doo doo", cn: "我们去打猎，嘟嘟嘟..." },
+            { en: "Run away, doo doo doo doo doo doo", cn: "快逃跑啊，嘟嘟嘟..." },
+            { en: "Safe at last, doo doo doo doo doo doo", cn: "终于安全了，嘟嘟嘟..." },
+            { en: "It's the end, doo doo doo doo doo doo", cn: "结束啦，嘟嘟嘟..." },
+        ];
+
+        // --- COMPONENTS ---
+
+        // 1. Header with Bubble Decoration
+        const Header = () => (
+            <header className="relative w-full p-6 text-center z-10">
+                <div className="bg-white/80 backdrop-blur-sm rounded-full inline-block px-8 py-3 shadow-lg border-4 border-blue-300">
+                    <h1 className="text-3xl md:text-4xl font-black text-blue-500 tracking-wider drop-shadow-sm">
+                        Baby Shark 🦈
+                    </h1>
+                </div>
+            </header>
+        );
+
+        // 2. Video & Lyrics Tab (Input Phase)
+        const WatchTab = () => {
+            return (
+                <div className="flex flex-col items-center space-y-6 w-full max-w-4xl mx-auto animate-fade-in-up">
+                    {/* TV Frame Container */}
+                    <div className="relative bg-yellow-400 p-4 rounded-[40px] shadow-[0_12px_0_rgb(202,138,4)] border-4 border-yellow-500 w-full">
+                        {/* Antennae decorations */}
+                        <div className="absolute -top-12 left-10 w-2 h-12 bg-gray-400 rotate-[-15deg] rounded-full z-0"></div>
+                        <div className="absolute -top-12 right-10 w-2 h-12 bg-gray-400 rotate-[15deg] rounded-full z-0"></div>
+                        
+                        <div className="bg-black rounded-[30px] overflow-hidden aspect-video w-full relative border-4 border-white">
+                            <video 
+                                className="w-full h-full object-cover" 
+                                controls 
+                                poster="https://img.youtube.com/vi/XqZsoesa55w/maxresdefault.jpg" // Fallback poster
+                                src="https://tc.bowu.chat/uploads/videos/xxrizf2K.mp4"
+                            >
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    {/* Lyrics Card */}
+                    <div className="w-full bg-white rounded-3xl p-6 shadow-xl border-b-8 border-gray-200">
+                        <h2 className="text-2xl font-bold text-pink-500 mb-4 flex items-center justify-center">
+                            <span className="mr-2">🎵</span> Sing Along / 一起唱
+                        </h2>
+                        <div className="h-64 overflow-y-auto no-scrollbar space-y-3 bg-blue-50 rounded-2xl p-4 border-2 border-blue-100">
+                            {LYRICS_DATA.map((line, index) => (
+                                <div key={index} className="bg-white p-3 rounded-xl shadow-sm hover:bg-blue-100 transition-colors">
+                                    <p className="text-lg font-bold text-gray-700">{line.en}</p>
+                                    <p className="text-md text-gray-400 font-medium">{line.cn}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. Vocabulary Tab (Focus Phase)
+        const VocabTab = () => {
+            const speak = (text) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // Slower for kids
+                utterance.pitch = 1.2; // Slightly higher pitch
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full max-w-5xl mx-auto pb-20">
+                    {VOCAB_DATA.map((item) => (
+                        <div 
+                            key={item.id}
+                            onClick={() => speak(item.en)}
+                            className={`${item.color} ${item.border} jelly-btn cursor-pointer rounded-3xl p-4 flex flex-col items-center justify-center h-48 relative overflow-hidden group`}
+                        >
+                            <div className="text-6xl mb-2 transform group-hover:scale-125 transition-transform duration-300 filter drop-shadow-md">
+                                {item.icon}
+                            </div>
+                            <h3 className="text-xl font-black text-white drop-shadow-md text-center leading-none mb-1">
+                                {item.en}
+                            </h3>
+                            <p className="text-white/90 font-semibold text-sm bg-black/10 px-3 py-1 rounded-full">
+                                {item.cn}
+                            </p>
+                            <div className="absolute top-2 right-2 bg-white/30 rounded-full p-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // 4. Game Tab (Task Phase)
+        const GameTab = () => {
+            const [bubbles, setBubbles] = useState([]);
+            const [score, setScore] = useState(0);
+
+            // Initialize bubbles
+            useEffect(() => {
+                const newBubbles = Array.from({ length: 8 }).map((_, i) => ({
+                    id: i,
+                    popped: false,
+                    content: VOCAB_DATA[i % VOCAB_DATA.length]
+                }));
+                setBubbles(newBubbles);
+            }, []);
+
+            const popBubble = (id, content) => {
+                setBubbles(prev => prev.map(b => b.id === id ? { ...b, popped: true } : b));
+                setScore(s => s + 1);
+                
+                // Play sound
+                const utterance = new SpeechSynthesisUtterance(content.en);
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const resetGame = () => {
+                setBubbles(bubbles.map(b => ({ ...b, popped: false })));
+                setScore(0);
+            };
+
+            return (
+                <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-purple-200 w-full text-center mb-6">
+                        <h2 className="text-2xl font-bold text-purple-500 mb-2">Pop the Bubbles! / 戳泡泡</h2>
+                        <p className="text-gray-500 mb-4">Click to find the family! / 点击泡泡找家人</p>
+                        <div className="text-4xl font-black text-purple-600 mb-4">{score} / 8</div>
+                        <button 
+                            onClick={resetGame}
+                            className="bg-purple-500 border-purple-700 text-white px-6 py-2 rounded-2xl jelly-btn font-bold"
+                        >
+                            Play Again / 再玩一次
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
+                        {bubbles.map((bubble) => (
+                            <div 
+                                key={bubble.id} 
+                                className="relative aspect-square flex items-center justify-center"
+                            >
+                                {/* The Hidden Content */}
+                                <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 ${bubble.popped ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
+                                    <span className="text-5xl">{bubble.content.icon}</span>
+                                    <span className="text-purple-600 font-bold mt-2">{bubble.content.en}</span>
+                                </div>
+
+                                {/* The Bubble Cover */}
+                                {!bubble.popped && (
+                                    <button
+                                        onClick={() => popBubble(bubble.id, bubble.content)}
+                                        className="w-full h-full rounded-full bg-blue-300/60 backdrop-blur-sm border-2 border-white shadow-inner animate-bounce hover:bg-blue-300/80 transition-all flex items-center justify-center group"
+                                        style={{ animationDuration: `${2 + bubble.id % 3}s` }}
+                                    >
+                                        <div className="w-4 h-4 bg-white/80 rounded-full absolute top-1/4 right-1/4"></div>
+                                        <span className="text-white font-bold opacity-0 group-hover:opacity-100">POP!</span>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App Component
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('video');
+
+            // Generate background bubbles dynamically
+            useEffect(() => {
+                const createBubbles = () => {
+                    const container = document.body;
+                    for (let i = 0; i < 15; i++) {
+                        const b = document.createElement('div');
+                        b.className = 'bubble';
+                        b.style.left = `${Math.random() * 100}vw`;
+                        b.style.width = `${Math.random() * 50 + 20}px`;
+                        b.style.height = b.style.width;
+                        b.style.animationDuration = `${Math.random() * 10 + 10}s`;
+                        b.style.animationDelay = `${Math.random() * 5}s`;
+                        container.appendChild(b);
+                    }
+                };
+                createBubbles();
+            }, []);
+
+            return (
+                <div className="min-h-screen flex flex-col items-center pb-24 overflow-x-hidden">
+                    <Header />
+
+                    <main className="w-full px-4 md:px-8 flex-grow z-10">
+                        {activeTab === 'video' && <WatchTab />}
+                        {activeTab === 'words' && <VocabTab />}
+                        {activeTab === 'game' && <GameTab />}
+                    </main>
+
+                    {/* Bottom Tab Navigation */}
+                    <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-2xl p-2 flex space-x-2 z-50 border-4 border-blue-100">
+                        <button 
+                            onClick={() => setActiveTab('video')}
+                            className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all duration-300 ${
+                                activeTab === 'video' 
+                                ? 'bg-yellow-400 text-yellow-900 shadow-md scale-105' 
+                                : 'text-gray-400 hover:bg-gray-100'
+                            }`}
+                        >
+                            <span>📺</span>
+                            <span className="hidden md:inline">Watch / 看视频</span>
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('words')}
+                            className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all duration-300 ${
+                                activeTab === 'words' 
+                                ? 'bg-pink-400 text-white shadow-md scale-105' 
+                                : 'text-gray-400 hover:bg-gray-100'
+                            }`}
+                        >
+                            <span>🗣️</span>
+                            <span className="hidden md:inline">Words / 学单词</span>
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('game')}
+                            className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all duration-300 ${
+                                activeTab === 'game' 
+                                ? 'bg-green-400 text-white shadow-md scale-105' 
+                                : 'text-gray-400 hover:bg-gray-100'
+                            }`}
+                        >
+                            <span>🎮</span>
+                            <span className="hidden md:inline">Play / 玩游戏</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
