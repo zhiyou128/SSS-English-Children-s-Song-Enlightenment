@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2025 by anonymous (http://jsbin.com/devejegofa/5/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peek-a-boo! I Love You - Lesson 5</title>
+    
+    <!-- React & Tailwind -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #FCE4EC; /* Soft Pink */
+            background-image: 
+                radial-gradient(#F8BBD0 15%, transparent 16%),
+                radial-gradient(#F8BBD0 15%, transparent 16%);
+            background-size: 50px 50px;
+            background-position: 0 0, 25px 25px;
+            color: #880E4F;
+        }
+
+        /* Heart/Love Button Styles */
+        .love-btn {
+            transition: all 0.2s;
+            border-bottom-width: 6px;
+            border-radius: 30px;
+        }
+        .love-btn:hover {
+            transform: scale(1.05);
+        }
+        .love-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+            box-shadow: none !important;
+        }
+        
+        /* Heartbeat Animation */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            40% { transform: scale(1); }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .heart-anim {
+            animation: heartbeat 2s infinite ease-in-out;
+        }
+
+        /* Hide and Seek Animations */
+        .hiding-spot {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .hiding-spot:hover {
+            transform: scale(1.02) rotate(2deg);
+        }
+        
+        @keyframes popUp {
+            0% { transform: translateY(100%); opacity: 0; }
+            60% { transform: translateY(-10%); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .revealed-cat {
+            animation: popUp 0.5s ease-out forwards;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- DATA ---
+        const VOCAB_DATA = [
+            { id: 1, en: "Peek-a-boo", cn: "捉迷藏", icon: "🫣", color: "bg-pink-400", border: "border-pink-600", text: "text-white" },
+            { id: 2, en: "I Love You", cn: "我爱你", icon: "❤️", color: "bg-red-500", border: "border-red-700", text: "text-white" },
+            { id: 3, en: "Cat", cn: "猫咪", icon: "🐱", color: "bg-orange-300", border: "border-orange-500", text: "text-orange-900" },
+            { id: 4, en: "Hide", cn: "躲藏", icon: "🙈", color: "bg-purple-400", border: "border-purple-600", text: "text-white" },
+            { id: 5, en: "Happy", cn: "开心", icon: "😄", color: "bg-yellow-400", border: "border-yellow-600", text: "text-yellow-900" },
+            { id: 6, en: "Hug", cn: "拥抱", icon: "🫂", color: "bg-blue-400", border: "border-blue-600", text: "text-white" },
+        ];
+
+        const LYRICS_DATA = [
+            { en: "Peek-a-boo!", cn: "躲猫猫！" },
+            { en: "Peek-a-boo!", cn: "躲猫猫！" },
+            { en: "Peek-a-boo! I love you!", cn: "躲猫猫！我爱你！" },
+            { en: "Peek-a-boo!", cn: "躲猫猫！" },
+            { en: "Peek-a-boo!", cn: "躲猫猫！" },
+            { en: "I love you!", cn: "我爱你！" },
+            { en: "Peek-a-boo! I love you!", cn: "躲猫猫！我爱你！" },
+        ];
+
+        // Game Data: Hiding Spots
+        const HIDING_SPOTS = [
+            { id: 1, type: "box", icon: "📦", reveal: "cat_white", revealIcon: "🐱", color: "bg-orange-200" },
+            { id: 2, type: "bush", icon: "🌳", reveal: "cat_black", revealIcon: "🐈‍⬛", color: "bg-green-300" },
+            { id: 3, type: "curtain", icon: "🧣", reveal: "none", revealIcon: "💨", color: "bg-red-200" }, // Empty
+            { id: 4, type: "blanket", icon: "🛏️", reveal: "cat_white", revealIcon: "🐱", color: "bg-blue-200" },
+        ];
+
+        // --- COMPONENTS ---
+
+        const Header = () => (
+            <header className="relative w-full p-6 text-center z-20">
+                <a href="index.html" className="absolute left-4 top-6 bg-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform border-b-4 border-gray-200 z-50 flex items-center justify-center w-12 h-12 text-2xl no-underline" title="Back to Home">
+                    🏠
+                </a>
+                <div className="bg-pink-500 text-white rounded-full inline-block px-8 py-3 shadow-lg border-4 border-pink-300 transform -rotate-2 relative">
+                    <h1 className="text-2xl md:text-4xl font-black tracking-wider drop-shadow-md flex items-center gap-2">
+                        <span className="heart-anim">❤️</span> Peek-a-boo! <span className="heart-anim">❤️</span>
+                    </h1>
+                </div>
+            </header>
+        );
+
+        const WatchTab = () => {
+            const speak = (text) => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8; 
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="flex flex-col items-center space-y-6 w-full max-w-4xl mx-auto animate-fade-in-up">
+                    {/* TV Frame - Love Style */}
+                    <div className="relative bg-red-400 p-4 rounded-[40px] shadow-[0_12px_0_rgb(185,28,28)] border-4 border-red-300 w-full">
+                        {/* Decoration */}
+                        <div className="absolute -top-6 -right-4 text-5xl heart-anim z-10">💕</div>
+                        <div className="absolute -bottom-6 -left-4 text-5xl heart-anim z-10" style={{animationDelay: '1s'}}>💖</div>
+
+                        <div className="bg-black rounded-[30px] overflow-hidden aspect-video w-full relative border-4 border-pink-100">
+                            <video 
+                                className="w-full h-full object-cover" 
+                                controls 
+                                poster="https://img.youtube.com/vi/lEntk5ghZwg/maxresdefault.jpg"
+                                src="https://tc.bowu.chat/uploads/videos/vl46ErAP.mp4"
+                            >
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    {/* Lyrics Card */}
+                    <div className="w-full bg-white rounded-3xl p-6 shadow-xl border-b-8 border-pink-200">
+                        <h2 className="text-2xl font-bold text-pink-600 mb-4 flex items-center justify-center">
+                            <span className="mr-2">🎤</span> Sing Together / 点击歌词朗读
+                        </h2>
+                        <div className="h-64 overflow-y-auto no-scrollbar space-y-3 bg-pink-50 rounded-2xl p-4 border-2 border-pink-100">
+                            {LYRICS_DATA.map((line, index) => (
+                                <div 
+                                    key={index} 
+                                    onClick={() => speak(line.en)}
+                                    className="bg-white p-3 rounded-xl shadow-sm hover:bg-pink-100 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex flex-col text-center group"
+                                >
+                                    <div className="flex justify-center items-center gap-2">
+                                        <span className="text-lg font-bold text-pink-800 group-hover:text-pink-600">{line.en}</span>
+                                        <span className="text-pink-400 opacity-0 group-hover:opacity-100">🔊</span>
+                                    </div>
+                                    <span className="text-md text-gray-500 font-medium">{line.cn}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const VocabTab = () => {
+            const speak = (text) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl mx-auto pb-20">
+                    {VOCAB_DATA.map((item) => (
+                        <div 
+                            key={item.id}
+                            onClick={() => speak(item.en)}
+                            className={`${item.color} ${item.border} love-btn cursor-pointer p-4 flex flex-col items-center justify-center h-48 relative overflow-hidden group shadow-lg`}
+                        >
+                            <div className="text-6xl mb-3 transform group-hover:scale-125 transition-transform duration-300 filter drop-shadow-md">
+                                {item.icon}
+                            </div>
+                            <h3 className={`text-2xl font-black ${item.text} drop-shadow-md text-center leading-none mb-1`}>
+                                {item.en}
+                            </h3>
+                            <p className="bg-white/30 text-white font-bold text-sm px-3 py-1 rounded-full text-center shadow-sm backdrop-blur-sm">
+                                {item.cn}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // Game: Hide and Seek
+        const GameTab = () => {
+            const [spots, setSpots] = useState([]);
+            const [foundCount, setFoundCount] = useState(0);
+            const [feedback, setFeedback] = useState("Where is the cat?");
+            const [gameOver, setGameOver] = useState(false);
+
+            useEffect(() => {
+                startNewGame();
+            }, []);
+
+            const startNewGame = () => {
+                // Shuffle reveals logic
+                const possibleReveals = ["cat_white", "cat_black", "none", "cat_white"]; // 3 cats, 1 empty
+                const shuffledReveals = possibleReveals.sort(() => Math.random() - 0.5);
+                
+                const newSpots = HIDING_SPOTS.map((spot, index) => ({
+                    ...spot,
+                    currentReveal: shuffledReveals[index],
+                    isOpen: false
+                }));
+
+                setSpots(newSpots);
+                setFoundCount(0);
+                setGameOver(false);
+                setFeedback("Find 3 Cats! / 找到3只猫咪！");
+            };
+
+            const handleSpotClick = (index) => {
+                if (spots[index].isOpen || gameOver) return;
+
+                const newSpots = [...spots];
+                newSpots[index].isOpen = true;
+                setSpots(newSpots);
+
+                const item = newSpots[index];
+
+                if (item.currentReveal.startsWith("cat")) {
+                    const newFound = foundCount + 1;
+                    setFoundCount(newFound);
+                    
+                    const utterance = new SpeechSynthesisUtterance("Peek-a-boo! I see you!");
+                    window.speechSynthesis.speak(utterance);
+                    setFeedback("Peek-a-boo! 🐱");
+
+                    if (newFound === 3) {
+                        setGameOver(true);
+                        triggerHearts();
+                        const winUtterance = new SpeechSynthesisUtterance("I love you!");
+                        window.speechSynthesis.speak(winUtterance);
+                        setFeedback("I Love You! ❤️");
+                    }
+                } else {
+                    const utterance = new SpeechSynthesisUtterance("Oh no, empty!");
+                    window.speechSynthesis.speak(utterance);
+                    setFeedback("Try again! 💨");
+                }
+            };
+
+            const triggerHearts = () => {
+                const duration = 3 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999, shapes: ['heart'], colors: ['#FFC0CB', '#FF69B4', '#FF1493', '#C71585'] };
+
+                const interval = setInterval(function() {
+                    const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) return clearInterval(interval);
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+                }, 250);
+            };
+
+            return (
+                <div className="w-full max-w-4xl mx-auto flex flex-col items-center pb-24 relative">
+                    
+                    {/* Win Overlay */}
+                    {gameOver && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                            <div className="bg-white rounded-3xl p-8 text-center max-w-md w-full border-b-8 border-pink-500 shadow-2xl animate-bounce">
+                                <div className="text-7xl mb-4">😻</div>
+                                <h2 className="text-4xl font-black text-pink-600 mb-2">I Love You!</h2>
+                                <p className="text-xl text-gray-600 mb-8 font-bold">You found all the cats!</p>
+                                <button 
+                                    onClick={startNewGame}
+                                    className="bg-pink-500 hover:bg-pink-400 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg w-full border-b-4 border-pink-700 transition-transform active:scale-95"
+                                >
+                                    Play Again / 再玩一次
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-pink-200 w-full text-center mb-8">
+                        <h2 className="text-2xl font-bold text-pink-600 mb-2">Hide & Seek! / 捉迷藏</h2>
+                        <p className="text-gray-500 text-lg font-medium">{feedback}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 w-full">
+                        {spots.map((spot, index) => (
+                            <div 
+                                key={spot.id}
+                                onClick={() => handleSpotClick(index)}
+                                className={`
+                                    ${spot.color} 
+                                    h-48 rounded-3xl shadow-md border-b-8 border-black/10
+                                    flex items-end justify-center relative overflow-hidden
+                                    hiding-spot
+                                    ${spot.isOpen ? 'cursor-default' : 'cursor-pointer'}
+                                `}
+                            >
+                                {/* Hiding Object (Cover) */}
+                                <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 z-10 ${spot.isOpen ? 'opacity-0 pointer-events-none translate-y-full' : 'opacity-100'}`}>
+                                    <span className="text-6xl drop-shadow-sm">{spot.icon}</span>
+                                    <span className="text-black/50 font-bold mt-2 uppercase text-sm tracking-wider">Click me</span>
+                                </div>
+
+                                {/* Revealed Content */}
+                                <div className={`absolute inset-0 flex flex-col items-center justify-center z-0 ${spot.isOpen ? 'revealed-cat' : 'opacity-0'}`}>
+                                    {spot.currentReveal.startsWith("cat") ? (
+                                        <>
+                                            <span className="text-7xl animate-bounce">
+                                                {spot.currentReveal === 'cat_black' ? '🐈‍⬛' : '🐱'}
+                                            </span>
+                                            <span className="text-pink-600 font-black mt-2 bg-white/80 px-3 py-1 rounded-full">Peek-a-boo!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-5xl opacity-50">💨</span>
+                                            <span className="text-gray-500 font-bold mt-2">Empty!</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('video');
+
+            return (
+                <div className="min-h-screen flex flex-col items-center overflow-x-hidden">
+                    <Header />
+
+                    <main className="w-full px-4 md:px-8 flex-grow z-10 pt-4">
+                        {activeTab === 'video' && <WatchTab />}
+                        {activeTab === 'words' && <VocabTab />}
+                        {activeTab === 'game' && <GameTab />}
+                    </main>
+
+                    {/* Navigation */}
+                    <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-2xl p-2 flex space-x-2 z-40 border-4 border-pink-100">
+                        <button onClick={() => setActiveTab('video')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'video' ? 'bg-pink-500 text-white shadow-md' : 'text-pink-400 hover:bg-pink-50'}`}>
+                            <span>📺</span><span className="hidden md:inline">Watch</span>
+                        </button>
+                        <button onClick={() => setActiveTab('words')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'words' ? 'bg-orange-400 text-white shadow-md' : 'text-pink-400 hover:bg-pink-50'}`}>
+                            <span>🗣️</span><span className="hidden md:inline">Words</span>
+                        </button>
+                        <button onClick={() => setActiveTab('game')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'game' ? 'bg-purple-500 text-white shadow-md' : 'text-pink-400 hover:bg-pink-50'}`}>
+                            <span>🎮</span><span className="hidden md:inline">Play</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

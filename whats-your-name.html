@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2025 by anonymous (http://jsbin.com/devejegofa/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Your Name? - Lesson 2</title>
+    
+    <!-- React & Tailwind -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #F1F8E9; /* Light Green */
+            background-image: radial-gradient(#AED581 20%, transparent 20%),
+                              radial-gradient(#AED581 20%, transparent 20%);
+            background-position: 0 0, 40px 40px;
+            background-size: 80px 80px;
+        }
+
+        /* 3D Jelly Button Styles - Park Theme */
+        .jelly-btn {
+            transition: all 0.1s;
+            border-bottom-width: 8px;
+        }
+        .jelly-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 4px;
+            box-shadow: none !important;
+        }
+        
+        /* Floating Cloud Animation */
+        @keyframes floatCloud {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(100vw); }
+        }
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: floatCloud linear infinite;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- DATA ---
+        const VOCAB_DATA = [
+            { id: 1, en: "Ryan", cn: "瑞恩 (男孩)", type: "name", icon: "👦", color: "bg-red-400", border: "border-red-600" },
+            { id: 2, en: "Anna", cn: "安娜 (女孩)", type: "name", icon: "👧", color: "bg-pink-400", border: "border-pink-600" },
+            { id: 3, en: "Ben", cn: "本 (戴帽子)", type: "name", icon: "🧢", color: "bg-blue-400", border: "border-blue-600" },
+            { id: 4, en: "Bella", cn: "贝拉 (戴眼镜)", type: "name", icon: "👓", color: "bg-purple-400", border: "border-purple-600" },
+            { id: 5, en: "Owen", cn: "欧文 (卷发)", type: "name", icon: "🧑‍🦱", color: "bg-yellow-400", border: "border-yellow-600" },
+            { id: 6, en: "Kaylee", cn: "凯莉 (金发)", type: "name", icon: "👱‍♀️", color: "bg-orange-400", border: "border-orange-600" },
+            { id: 7, en: "Hello", cn: "你好", type: "phrase", icon: "👋", color: "bg-green-400", border: "border-green-600" },
+            { id: 8, en: "Friends", cn: "朋友", type: "phrase", icon: "🤝", color: "bg-teal-400", border: "border-teal-600" },
+        ];
+
+        const LYRICS_DATA = [
+            { en: "Hello! Hello! What's your name?", cn: "你好！你好！你叫什么名字？" },
+            { en: "My name is Ryan.", cn: "我的名字是瑞恩。" },
+            { en: "My name is Anna.", cn: "我的名字是安娜。" },
+            { en: "Nice to meet you!", cn: "很高兴认识你！" },
+            { en: "Hello! Hello! What's your name?", cn: "你好！你好！你叫什么名字？" },
+            { en: "My name is Ben.", cn: "我的名字是本。" },
+            { en: "My name is Bella.", cn: "我的名字是贝拉。" },
+            { en: "Nice to meet you!", cn: "很高兴认识你！" },
+            { en: "Let's be friends!", cn: "让我们成为朋友吧！" },
+        ];
+
+        // --- COMPONENTS ---
+
+        const Header = () => (
+            <header className="relative w-full p-6 text-center z-20">
+                <a href="index.html" className="absolute left-4 top-6 bg-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform border-b-4 border-gray-200 z-50 flex items-center justify-center w-12 h-12 text-2xl no-underline" title="Back to Home / 返回主页">
+                    🏠
+                </a>
+                <div className="bg-white/90 backdrop-blur-sm rounded-full inline-block px-8 py-3 shadow-lg border-4 border-green-300 transform -rotate-2">
+                    <h1 className="text-2xl md:text-4xl font-black text-green-600 tracking-wider">
+                        What's Your Name?
+                    </h1>
+                </div>
+            </header>
+        );
+
+        const WatchTab = () => {
+            const speak = (text) => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8; 
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="flex flex-col items-center space-y-6 w-full max-w-4xl mx-auto animate-fade-in-up">
+                    {/* TV Frame - Green Style */}
+                    <div className="relative bg-green-500 p-4 rounded-[40px] shadow-[0_12px_0_rgb(21,128,61)] border-4 border-green-400 w-full">
+                        <div className="bg-black rounded-[30px] overflow-hidden aspect-video w-full relative border-4 border-white">
+                            <video 
+                                className="w-full h-full object-cover" 
+                                controls 
+                                poster="image_19dd37.jpg"
+                                src="https://tc.bowu.chat/uploads/videos/YiWxRhEw.mp4"
+                            >
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    {/* Lyrics Card */}
+                    <div className="w-full bg-white rounded-3xl p-6 shadow-xl border-b-8 border-gray-200">
+                        <h2 className="text-2xl font-bold text-orange-500 mb-4 flex items-center justify-center">
+                            <span className="mr-2">🎶</span> Sing Along / 点击歌词朗读
+                        </h2>
+                        <div className="h-64 overflow-y-auto no-scrollbar space-y-3 bg-green-50 rounded-2xl p-4 border-2 border-green-100">
+                            {LYRICS_DATA.map((line, index) => (
+                                <div 
+                                    key={index} 
+                                    onClick={() => speak(line.en)}
+                                    className="bg-white p-3 rounded-xl shadow-sm hover:bg-green-100 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-lg font-bold text-gray-700 group-hover:text-green-600">{line.en}</p>
+                                        <span className="text-green-400 opacity-0 group-hover:opacity-100">🔊</span>
+                                    </div>
+                                    <p className="text-md text-gray-400 font-medium">{line.cn}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const VocabTab = () => {
+            const speak = (text) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-5xl mx-auto pb-20">
+                    {VOCAB_DATA.map((item) => (
+                        <div 
+                            key={item.id}
+                            onClick={() => speak(item.en)}
+                            className={`${item.color} ${item.border} jelly-btn cursor-pointer rounded-3xl p-4 flex flex-col items-center justify-center h-48 relative overflow-hidden group`}
+                        >
+                            <div className="text-6xl mb-2 transform group-hover:scale-125 transition-transform duration-300 filter drop-shadow-md">
+                                {item.icon}
+                            </div>
+                            <h3 className="text-xl font-black text-white drop-shadow-md text-center leading-none mb-1">
+                                {item.en}
+                            </h3>
+                            <p className="text-white/90 font-semibold text-sm bg-black/10 px-3 py-1 rounded-full text-center">
+                                {item.cn}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // Game: "Who is it?" / "Find the Friend"
+        const GameTab = () => {
+            const [target, setTarget] = useState(null);
+            const [options, setOptions] = useState([]);
+            const [feedback, setFeedback] = useState("Ready?"); 
+            const [score, setScore] = useState(0);
+
+            // Start a new round
+            const startRound = () => {
+                const namesOnly = VOCAB_DATA.filter(v => v.type === "name");
+                let shuffledAll = [...namesOnly].sort(() => 0.5 - Math.random());
+                const roundOptions = shuffledAll.slice(0, 4);
+                const newTarget = roundOptions[Math.floor(Math.random() * roundOptions.length)];
+
+                setTarget(newTarget);
+                setOptions(roundOptions); 
+                setFeedback("Listen...");
+                
+                setTimeout(() => {
+                    speakQuestion(newTarget.en);
+                }, 500);
+            };
+
+            const speakQuestion = (name) => {
+                if (!name) return;
+                const utterance = new SpeechSynthesisUtterance(`Where is ${name}?`);
+                window.speechSynthesis.speak(utterance);
+            };
+
+            useEffect(() => {
+                startRound();
+            }, []);
+
+            const handleGuess = (item) => {
+                if (!target) return;
+                
+                if (item.id === target.id) {
+                    setFeedback("Correct! ✅");
+                    setScore(s => s + 1);
+                    const utterance = new SpeechSynthesisUtterance(`Yes! I am ${item.en}.`);
+                    window.speechSynthesis.speak(utterance);
+                    setTimeout(startRound, 2000);
+                } else {
+                    setFeedback("Try again! ❌");
+                    const utterance = new SpeechSynthesisUtterance(`No, try again.`);
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            return (
+                <div className="w-full max-w-3xl mx-auto flex flex-col items-center pb-24">
+                    {/* Score Board */}
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border-b-8 border-yellow-200 w-full text-center mb-8">
+                        <h2 className="text-2xl font-bold text-yellow-600 mb-2">Find the Friend! / 找朋友</h2>
+                        <div className="flex items-center justify-center space-x-4">
+                            <button onClick={() => speakQuestion(target?.en)} className="bg-blue-100 p-2 rounded-full hover:bg-blue-200 transition-colors">
+                                🔊 Hear Again / 再听一次
+                            </button>
+                        </div>
+                        
+                        <div className="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-100">
+                            <p className="text-gray-400 text-sm">Find this friend:</p>
+                            <p className="text-4xl font-black text-yellow-500 mt-1 animate-pulse">
+                                {target ? target.en : "..."}
+                            </p>
+                            <p className="text-gray-400 text-sm mt-1">{target?.cn}</p>
+                        </div>
+
+                        <div className="mt-2 text-xl font-bold text-gray-300">Score: {score}</div>
+                        <div className={`mt-2 font-bold text-lg ${feedback.includes("Correct") ? "text-green-500" : "text-red-400"}`}>
+                            {feedback}
+                        </div>
+                    </div>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                        {options.map((item) => (
+                            <div 
+                                key={item.id}
+                                onClick={() => handleGuess(item)}
+                                className={`${item.color} ${item.border} jelly-btn cursor-pointer rounded-3xl p-6 flex flex-col items-center justify-center h-40 transform transition-all hover:scale-105 active:scale-95`}
+                            >
+                                <div className="text-6xl drop-shadow-md mb-2">{item.icon}</div>
+                                <div className="text-white font-bold text-xl">{item.en}</div>
+                                <div className="text-white/80 text-sm">{item.cn}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('video');
+
+            return (
+                <div className="min-h-screen flex flex-col items-center overflow-x-hidden">
+                    <Header />
+
+                    {/* Animated Clouds Background */}
+                    <div className="fixed top-20 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+                        <div className="cloud w-32 h-12 top-10" style={{ animationDuration: '25s' }}></div>
+                        <div className="cloud w-24 h-8 top-32" style={{ animationDuration: '35s', animationDelay: '5s' }}></div>
+                        <div className="cloud w-40 h-16 top-60" style={{ animationDuration: '45s', animationDelay: '2s' }}></div>
+                    </div>
+
+                    <main className="w-full px-4 md:px-8 flex-grow z-10 pt-4">
+                        {activeTab === 'video' && <WatchTab />}
+                        {activeTab === 'words' && <VocabTab />}
+                        {activeTab === 'game' && <GameTab />}
+                    </main>
+
+                    {/* Navigation */}
+                    <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-2xl p-2 flex space-x-2 z-50 border-4 border-green-100">
+                        <button onClick={() => setActiveTab('video')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'video' ? 'bg-green-400 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+                            <span>📺</span><span className="hidden md:inline">Watch</span>
+                        </button>
+                        <button onClick={() => setActiveTab('words')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'words' ? 'bg-yellow-400 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+                            <span>🗣️</span><span className="hidden md:inline">Words</span>
+                        </button>
+                        <button onClick={() => setActiveTab('game')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'game' ? 'bg-blue-400 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+                            <span>🎮</span><span className="hidden md:inline">Play</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2025 by anonymous (http://jsbin.com/devejegofa/3/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twinkle Twinkle Little Star - Lesson 3</title>
+    
+    <!-- React & Tailwind -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for Fireworks -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #1a237e; /* Deep Night Blue */
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            color: white;
+        }
+
+        /* Glowing Button Styles */
+        .star-btn {
+            transition: all 0.2s;
+            border-bottom-width: 6px;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.3);
+        }
+        .star-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(255, 235, 59, 0.6);
+        }
+        .star-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+            box-shadow: none;
+        }
+        
+        /* Twinkle Animation */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .star-anim {
+            animation: twinkle 3s infinite ease-in-out;
+        }
+        
+        /* Celebration Overlay Animation */
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .celebrate-card {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- DATA ---
+        const VOCAB_DATA = [
+            { id: 1, en: "Star", cn: "星星", icon: "⭐", color: "bg-yellow-400", border: "border-yellow-600", text: "text-yellow-900" },
+            { id: 2, en: "Sky", cn: "天空", icon: "🌌", color: "bg-blue-500", border: "border-blue-700", text: "text-white" },
+            { id: 3, en: "Diamond", cn: "钻石", icon: "💎", color: "bg-cyan-400", border: "border-cyan-600", text: "text-cyan-900" },
+            { id: 4, en: "Night", cn: "夜晚", icon: "🌙", color: "bg-indigo-500", border: "border-indigo-800", text: "text-white" },
+            { id: 5, en: "Up High", cn: "高高在上的", icon: "⬆️", color: "bg-purple-400", border: "border-purple-600", text: "text-white" },
+            { id: 6, en: "Little", cn: "小小的", icon: "🤏", color: "bg-pink-400", border: "border-pink-600", text: "text-white" },
+        ];
+
+        const LYRICS_DATA = [
+            { en: "Twinkle, twinkle, little star,", cn: "一闪一闪小星星，" },
+            { en: "How I wonder what you are!", cn: "究竟何物现奇景！" },
+            { en: "Up above the world so high,", cn: "远在世界高空里，" },
+            { en: "Like a diamond in the sky.", cn: "恰似天上小钻石。" },
+            { en: "Twinkle, twinkle, little star,", cn: "一闪一闪小星星，" },
+            { en: "How I wonder what you are!", cn: "究竟何物现奇景！" },
+        ];
+
+        // --- COMPONENTS ---
+
+        const Header = () => (
+            <header className="relative w-full p-6 text-center z-20">
+                <a href="index.html" className="absolute left-4 top-6 bg-white/10 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white/20 transition-all border-2 border-white/30 z-50 flex items-center justify-center w-12 h-12 text-2xl no-underline" title="Back to Home / 返回主页">
+                    🏠
+                </a>
+                <div className="bg-indigo-900/80 backdrop-blur-md rounded-full inline-block px-8 py-3 shadow-[0_0_20px_rgba(255,255,255,0.2)] border-2 border-yellow-200/30">
+                    <h1 className="text-2xl md:text-4xl font-black text-yellow-300 tracking-wider drop-shadow-lg">
+                        Twinkle Little Star
+                    </h1>
+                </div>
+            </header>
+        );
+
+        const WatchTab = () => {
+            const speak = (text) => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="flex flex-col items-center space-y-6 w-full max-w-4xl mx-auto animate-fade-in-up">
+                    {/* TV Frame - Night Style */}
+                    <div className="relative bg-indigo-600 p-4 rounded-[40px] shadow-[0_12px_0_rgb(49,46,129)] border-4 border-indigo-400 w-full">
+                        {/* Glowing Stars Decoration */}
+                        <div className="absolute -top-6 -right-6 text-4xl star-anim">⭐</div>
+                        <div className="absolute -bottom-4 -left-4 text-3xl star-anim" style={{animationDelay: '1s'}}>✨</div>
+
+                        <div className="bg-black rounded-[30px] overflow-hidden aspect-video w-full relative border-4 border-white/20">
+                            <video 
+                                className="w-full h-full object-cover" 
+                                controls 
+                                poster="https://img.youtube.com/vi/yCjJyiqpAuU/maxresdefault.jpg"
+                                src="https://tc.bowu.chat/uploads/videos/dW9izYEx.mp4"
+                            >
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    {/* Lyrics Card */}
+                    <div className="w-full bg-white/10 backdrop-blur-md rounded-3xl p-6 shadow-xl border-t border-white/20">
+                        <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex items-center justify-center">
+                            <span className="mr-2">🌙</span> Sing Along / 点击歌词朗读
+                        </h2>
+                        <div className="h-64 overflow-y-auto no-scrollbar space-y-3 bg-black/20 rounded-2xl p-4 border border-white/10">
+                            {LYRICS_DATA.map((line, index) => (
+                                <div 
+                                    key={index} 
+                                    onClick={() => speak(line.en)}
+                                    className="bg-white/5 p-3 rounded-xl hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border border-white/5 group"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-lg font-bold text-yellow-100 group-hover:text-yellow-300">{line.en}</p>
+                                        <span className="text-yellow-200 opacity-0 group-hover:opacity-100">🔊</span>
+                                    </div>
+                                    <p className="text-md text-gray-300 font-medium">{line.cn}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const VocabTab = () => {
+            const speak = (text) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            };
+
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl mx-auto pb-20">
+                    {VOCAB_DATA.map((item) => (
+                        <div 
+                            key={item.id}
+                            onClick={() => speak(item.en)}
+                            className={`${item.color} ${item.border} star-btn cursor-pointer rounded-3xl p-4 flex flex-col items-center justify-center h-48 relative overflow-hidden group`}
+                        >
+                            <div className="text-6xl mb-3 transform group-hover:scale-125 transition-transform duration-300 filter drop-shadow-md star-anim">
+                                {item.icon}
+                            </div>
+                            <h3 className={`text-2xl font-black ${item.text} drop-shadow-md text-center leading-none mb-1`}>
+                                {item.en}
+                            </h3>
+                            <p className="text-black/60 font-bold text-sm bg-white/30 px-3 py-1 rounded-full text-center backdrop-blur-sm">
+                                {item.cn}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // Game: "Catch the Star" logic
+        const GameTab = () => {
+            const [target, setTarget] = useState(null);
+            const [options, setOptions] = useState([]);
+            const [feedback, setFeedback] = useState("Ready?");
+            const [score, setScore] = useState(0);
+            const [gameOver, setGameOver] = useState(false); // New state for game over
+
+            const startRound = () => {
+                // 1. Shuffle all vocabs
+                let shuffledAll = [...VOCAB_DATA].sort(() => 0.5 - Math.random());
+                // 2. Pick first 4 options
+                const roundOptions = shuffledAll.slice(0, 4);
+                // 3. Pick 1 winner from these 4
+                const newTarget = roundOptions[Math.floor(Math.random() * roundOptions.length)];
+
+                setTarget(newTarget);
+                setOptions(roundOptions);
+                setFeedback("Listen...");
+                
+                setTimeout(() => {
+                    speakQuestion(newTarget.en);
+                }, 500);
+            };
+
+            const speakQuestion = (name) => {
+                if (!name) return;
+                const utterance = new SpeechSynthesisUtterance(`Find the ${name}!`);
+                window.speechSynthesis.speak(utterance);
+            };
+
+            // Fireworks effect
+            const triggerFireworks = () => {
+                const duration = 5 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 };
+
+                const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+                const interval = setInterval(function() {
+                    const timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+                }, 250);
+            };
+
+            useEffect(() => {
+                startRound();
+            }, []);
+
+            const handleGuess = (item) => {
+                if (!target || gameOver) return;
+                
+                if (item.id === target.id) {
+                    const newScore = score + 1;
+                    setScore(newScore);
+                    setFeedback("Correct! ⭐");
+                    
+                    const utterance = new SpeechSynthesisUtterance(`Yes! It is a ${item.en}.`);
+                    window.speechSynthesis.speak(utterance);
+                    
+                    // Check for Win Condition (10 Points)
+                    if (newScore >= 10) {
+                        setGameOver(true);
+                        triggerFireworks(); // Launch fireworks!
+                        const winUtterance = new SpeechSynthesisUtterance("Congratulations! You won!");
+                        window.speechSynthesis.speak(winUtterance);
+                    } else {
+                        setTimeout(startRound, 2000);
+                    }
+                } else {
+                    setFeedback("Try again! 🌚");
+                    const utterance = new SpeechSynthesisUtterance(`Oops, try again.`);
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const resetGame = () => {
+                setScore(0);
+                setGameOver(false);
+                setFeedback("Ready?");
+                startRound();
+            };
+
+            return (
+                <div className="w-full max-w-3xl mx-auto flex flex-col items-center pb-24 relative">
+                    
+                    {/* Game Over / Win Screen */}
+                    {gameOver && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                            <div className="bg-white rounded-3xl p-8 text-center max-w-md w-full border-4 border-yellow-400 celebrate-card shadow-[0_0_50px_rgba(255,215,0,0.5)]">
+                                <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                                <h2 className="text-3xl font-black text-indigo-900 mb-2">Great Job!</h2>
+                                <p className="text-xl text-indigo-600 mb-6 font-bold">You got 10 Stars!</p>
+                                <button 
+                                    onClick={resetGame}
+                                    className="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-4 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 w-full border-b-4 border-yellow-600"
+                                >
+                                    Play Again / 再玩一次
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Score Board */}
+                    <div className="bg-indigo-800/80 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-indigo-500 w-full text-center mb-8">
+                        <h2 className="text-2xl font-bold text-yellow-300 mb-2">Catch the Star! / 摘星星</h2>
+                        <div className="flex items-center justify-center space-x-4">
+                            <button onClick={() => speakQuestion(target?.en)} className="bg-white/10 text-white p-2 rounded-full hover:bg-white/20 transition-colors border border-white/20">
+                                🔊 Hear Again / 再听一次
+                            </button>
+                        </div>
+                        
+                        <div className="mt-4 p-4 bg-black/30 rounded-xl border border-white/10">
+                            <p className="text-indigo-200 text-sm">Find this:</p>
+                            <p className="text-4xl font-black text-yellow-400 mt-1 animate-pulse drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]">
+                                {target ? target.en : "..."}
+                            </p>
+                            <p className="text-indigo-300 text-sm mt-1">{target?.cn}</p>
+                        </div>
+
+                        {/* Progress Bar for Score */}
+                        <div className="mt-4 w-full bg-black/30 rounded-full h-4 border border-white/10">
+                            <div 
+                                className="bg-yellow-400 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,215,0,0.8)]"
+                                style={{ width: `${Math.min((score / 10) * 100, 100)}%` }}
+                            ></div>
+                        </div>
+                        <div className="mt-2 text-xl font-bold text-white flex justify-between px-2">
+                            <span>Score: {score}</span>
+                            <span className="text-yellow-400">Target: 10</span>
+                        </div>
+                        
+                        <div className={`mt-2 font-bold text-lg ${feedback.includes("Correct") ? "text-green-400" : "text-red-400"}`}>
+                            {feedback}
+                        </div>
+                    </div>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                        {options.map((item) => (
+                            <div 
+                                key={item.id}
+                                onClick={() => handleGuess(item)}
+                                className={`${item.color} ${item.border} star-btn cursor-pointer rounded-3xl p-6 flex flex-col items-center justify-center h-40 transform transition-all hover:scale-105 active:scale-95`}
+                            >
+                                <div className="text-6xl drop-shadow-md mb-2">{item.icon}</div>
+                                <div className={`${item.text} font-black text-xl drop-shadow-sm`}>{item.en}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('video');
+
+            return (
+                <div className="min-h-screen flex flex-col items-center overflow-x-hidden">
+                    <Header />
+
+                    <main className="w-full px-4 md:px-8 flex-grow z-10 pt-4">
+                        {activeTab === 'video' && <WatchTab />}
+                        {activeTab === 'words' && <VocabTab />}
+                        {activeTab === 'game' && <GameTab />}
+                    </main>
+
+                    {/* Navigation */}
+                    <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-900/90 backdrop-blur-xl rounded-full shadow-2xl p-2 flex space-x-2 z-40 border border-indigo-500/50">
+                        <button onClick={() => setActiveTab('video')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'video' ? 'bg-yellow-400 text-yellow-900 shadow-[0_0_15px_rgba(255,235,59,0.4)]' : 'text-indigo-300 hover:bg-white/5'}`}>
+                            <span>📺</span><span className="hidden md:inline">Watch</span>
+                        </button>
+                        <button onClick={() => setActiveTab('words')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'words' ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'text-indigo-300 hover:bg-white/5'}`}>
+                            <span>🗣️</span><span className="hidden md:inline">Words</span>
+                        </button>
+                        <button onClick={() => setActiveTab('game')} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${activeTab === 'game' ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'text-indigo-300 hover:bg-white/5'}`}>
+                            <span>🎮</span><span className="hidden md:inline">Play</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
